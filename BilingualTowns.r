@@ -122,10 +122,36 @@ glimpse(BE_ADMIN_MUNTY@data, max.level=2)
 mapdata <- merge(BE_ADMIN_MUNTY, popdata, by.x = "CD_MUNTY_REFNIS", by.y = "REFNIS")
 glimpse(mapdata@data, max.level=2)
 
-
 #Filling
 tm_shape(mapdata) +
-  tm_fill(col="cleanSameName") 
+  tm_fill(col="cleanSameName")+
+  tm_polygons(alpha=0.2)
+
+
+
+
+
+#trial with only FALSE numbers
+
+popdataFALSEonly <- popdata %>% 
+  filter(cleanSameName==FALSE)
+  
+mapdataFALSEonly <- merge(BE_ADMIN_MUNTY, popdataFALSEonly, by.x = "CD_MUNTY_REFNIS", by.y = "REFNIS")
+glimpse(mapdataFALSEonly@data, max.level=2)  
+
+
+
+library(RColorBrewer)
+
+palette = brewer.pal(3, "YlGnBu")
+
+tm_shape(mapdataFALSEonly) +
+  tm_fill(col="Region", palette=palette)+
+  #tm_fill(col="population", alpha=1)+
+  tm_polygons()
+
+
+
 
 # library(leaflet)
 # leaflet(mapdata) %>%
