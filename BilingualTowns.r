@@ -1,8 +1,8 @@
 library(tidyverse)
 library(readxl)
 library(sp)
-#library(BelgiumMaps.StatBel)
 library(tmap)
+library(viri)
 
 
 #Data import from http://statbel.fgov.be/nl/statistieken/opendata/datasets/bevolking/big/TF_SOC_POP_STRUCT_2017.jsp
@@ -122,14 +122,6 @@ glimpse(BE_ADMIN_MUNTY@data, max.level=2)
 mapdata <- merge(BE_ADMIN_MUNTY, popdata, by.x = "CD_MUNTY_REFNIS", by.y = "REFNIS")
 glimpse(mapdata@data, max.level=2)
 
-#Filling
-tm_shape(mapdata) +
-  tm_fill(col="cleanSameName")+
-  tm_polygons(alpha=0.2)
-
-
-
-
 
 #trial with only FALSE numbers
 
@@ -142,15 +134,37 @@ glimpse(mapdataFALSEonly@data, max.level=2)
 
 
 library(RColorBrewer)
+library(viridisLite)
 
-palette = brewer.pal(3, "YlGnBu")
+palette <- brewer.pal(3, "YlGnBu")
+virpalette <- viridis(3)
+magpalette <- magma(3)
+infpalette <- inferno(3)
 
-tm_shape(mapdataFALSEonly) +
-  tm_fill(col="Region", palette=palette)+
-  #tm_fill(col="population", alpha=1)+
-  tm_polygons()
+#Plot different regions
+regionplot<- tm_shape(mapdata) +
+  tm_fill(col="Region", palette=rev(virpalette),
+          title = "Regions in Belgium")+
+  tm_polygons()+
+  tm_layout(legend.position = c("left", "bottom"))
 
 
+#Plot to show those with differnet name by region
+nameplot <- tm_shape(mapdataFALSEonly) +
+  tm_fill(col="Region", palette=rev(magpalette), id="TownNL", 
+          colorNA = "gray90", textNA="Same name", 
+          title = "Different regional town names",legend.position = c("left", "bottom" ))+
+  tm_polygons()+
+  tm_layout(legend.position = c("left", "bottom"))
+
+
+tmap_arrange(regionplot, nameplot)
+
+
+
+
+
+map
 
 
 # library(leaflet)
