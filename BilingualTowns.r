@@ -88,6 +88,10 @@ mean(popdata$cleanSameName)
 #by region
 popdata %>% 
   group_by(Region) %>% 
+  summarise(NTowns=n(), Prop_SameName =round(mean(cleanSameName),2), Prop_DiffName=1-round(mean(cleanSameName),2))
+
+popdata %>% 
+  group_by(Region) %>% 
   summarise(sum=sum(cleanSameName), proportion=round(mean(cleanSameName),2))
 
 
@@ -111,13 +115,42 @@ popdata %>%
   filter(!cleanSameName) %>% 
   arrange(population)
 
+
+
+
+#Where are these towns? Clearly some small ones but in general they trend much larger than the average town.
+require(scales)
+
+ggplot()+
+  geom_histogram(data=popdata, aes(x=population), fill="grey", alpha=0.6)+
+  geom_histogram(data=subset(popdata, cleanSameName==FALSE), aes(x=population), fill="cadetblue4", alpha=0.8)+
+  scale_x_log10()+
+  ggtitle("Size of bilingual towns versus all towns")
+
+
+
+#Check skew towards cities
+
+#10% largest towns and cities in Belgium
+quantile(popdata$population, probs = seq(from = 0, to = 1, by = .1))
+
 popdata %>% 
-  filter(!cleanSameName) %>% 
-  ggplot(aes(x=population))+
-    geom_histogram(alpha=0.3, bins = 5)
+  filter(population > 50000)%>%
+  group_by(cleanSameName)%>% 
+  count()
+  
+popdata %>% 
+  filter(population > 50000)%>%
+  filter(cleanSameName==TRUE)%>% 
+  arrange(desc(population))
 
-
-
+popdata %>% 
+  filter(Region != "Brussels agglomeration") %>% 
+  select(cleanSameName, cleanTownNL, cleanTownFR, population) %>% 
+  filter(population > 51348)%>%
+  filter(cleanSameName==FALSE)%>% 
+  arrange(desc(population)) %>% 
+  print(n=nrow(.))
 
 
 
