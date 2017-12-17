@@ -1,8 +1,9 @@
 library(tidyverse)
 library(readxl)
+library(ggplot2)
 library(sp)
 library(tmap)
-library(viri)
+library(viridisLite)
 
 
 #Data import from http://statbel.fgov.be/nl/statistieken/opendata/datasets/bevolking/big/TF_SOC_POP_STRUCT_2017.jsp
@@ -73,6 +74,8 @@ popdata <- popdata %>%
 
 
 
+
+
 #################
 #DATA EXPLORATION
 #################
@@ -85,7 +88,7 @@ mean(popdata$cleanSameName)
 #by region
 popdata %>% 
   group_by(Region) %>% 
-  summarise(sum=sum(cleanSameName), proportion=mean(cleanSameName))
+  summarise(sum=sum(cleanSameName), proportion=round(mean(cleanSameName),2))
 
 
 #Which are the ones with different names?
@@ -107,6 +110,15 @@ popdata%>%
 popdata %>% 
   filter(!cleanSameName) %>% 
   arrange(population)
+
+popdata %>% 
+  filter(!cleanSameName) %>% 
+  ggplot(aes(x=population))+
+    geom_histogram(alpha=0.3, bins = 5)
+
+
+
+
 
 
 
@@ -151,7 +163,7 @@ regionplot<- tm_shape(mapdata) +
 
 #Plot to show those with differnet name by region
 nameplot <- tm_shape(mapdataFALSEonly) +
-  tm_fill(col="Region", palette=rev(magpalette), id="TownNL", 
+  tm_fill(col="Region", palette=rev(virpalette), id="TownNL", 
           colorNA = "gray90", textNA="Same name", 
           title = "Different regional town names",legend.position = c("left", "bottom" ))+
   tm_polygons()+
