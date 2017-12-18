@@ -256,8 +256,7 @@ glimpse(mapdataDiffName@data, max.level=2)
 
 
 
-library(RColorBrewer)
-library(viridisLite)
+
 
 #palette <- brewer.pal(3, "YlGnBu")
 virpalette <- rev(viridis(3))

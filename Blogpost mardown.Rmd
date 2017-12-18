@@ -1,0 +1,32 @@
+---
+title: "Antwerpen/Anvers, Bergen/Mons, Zoutleeuw/Léau"
+output: md_document
+---
+
+<br>
+
+## What I was wondering: how many towns do we have with two official names?
+More than once did I hear the story about tourists driving through our country and getting confused with our town names. They are on the E19 driving south and their GPS might tell them to follow the direction *"Mons"*, but as long as they are on Flemish territory they will see *"Bergen"* instead which is the very same city, but the Flemish name for it.
+<br><br>
+Bergen/Mons, Antwerpen/Anvers, Kortrijk/Courtrai... They're all the same city just described in Flemish or French, but how many do we have to confuse people? 
+
+
+## Data source
+I found everything I needed on ([this website](http://statbel.fgov.be/nl/statistieken/opendata/datasets/bevolking/big/TF_SOC_POP_STRUCT_2017.jsp)) from the Belgian government.
+<br><br>
+
+## Cleaning the data
+
+Starting by loading the packages needed:
+```{r message=FALSE}
+library(tidyverse)
+library(readxl)
+library(ggplot2)
+library(sp)
+library(tmap)
+library(viridisLite)
+```
+
+<br>
+Importing the data and getting my first glimpse of what it looks like:
+{r 
