@@ -24,6 +24,8 @@ data <- raw_data %>%
 colnames(data) <- c("REFNIS", "TownNL", "TownFR", "Region", "Sex", "Nationality", "MaritalStatus", "Age", "Population")
 
 
+
+
 #Translating Region names to English
 data$Region <- data$Region %>% 
   str_replace("Vlaams Gewest", "Flanders") %>% 
@@ -246,6 +248,8 @@ mapdata <- merge(BE_ADMIN_MUNTY, popdata_reason, by.x = "CD_MUNTY_REFNIS", by.y 
 glimpse(mapdata@data, max.level=2)
 
 
+sf_belgium <- data("BE_ADMIN_MUNTY", package="BelgiumMaps.StatBel", class = "sf")
+
 #trial with only FALSE numbers
 
 popdata_DiffName <- popdata_reason %>% 
@@ -268,7 +272,7 @@ palette5 <- c(virpalette, "#E41A1C", "#FC8D62")
 regionplot<- tm_shape(mapdata) +
   tm_fill(col="Region", palette=virpalette,
           title = "Regions in Belgium")+
-  tm_polygons()+
+  tm_polygons(id="TownNL")+
   tm_layout(legend.position = c("left", "bottom"))
 
 
@@ -276,9 +280,13 @@ regionplot<- tm_shape(mapdata) +
 nameplot <- tm_shape(mapdataDiffName) +
   tm_fill(col="Region", palette=virpalette, id="TownNL", 
           colorNA = "gray90", textNA="Same name", 
-          title = "Different regional town names",legend.position = c("left", "bottom" ))+
-  tm_polygons()+
+          title = "Different regional town names",legend.position = c("left", "bottom" ),
+          popup.vars = c("TownNL","TownFR", "population", "Reason"))+
+  tm_polygons(id="TownNL", "TownFR")+
   tm_layout(legend.position = c("left", "bottom"))
+
+
+tmap_arrange(regionplot, nameplot)
 
 
 reasonplot <- tm_shape(mapdataDiffName) +
@@ -289,24 +297,9 @@ reasonplot <- tm_shape(mapdataDiffName) +
   tm_layout(legend.position = c("left", "bottom"))
 
 
-tmap_arrange(regionplot, nameplot)
-reasonplot
+library(leaflet)
+interactive_plot <- tmap_leaflet(nameplot)
+interactive_plot
 
 
 
-
-
-
-
-# library(leaflet)
-# leaflet(mapdata) %>%
-#   addTiles() %>%
-#   addPolygons(stroke = FALSE, smoothFactor = 0.2, fillOpacity = 0.85, color = "cleanSameName") %>%
-#   addPopups(lng = 4.366354, lat = 50.86619)
-
-
-#What i would like to change stil
-#Draw regions in the back (to see where the language border is)
-#Add color for population size
-#popup to read the commune name?
-  
