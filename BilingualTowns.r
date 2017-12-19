@@ -33,6 +33,12 @@ data$Region <- data$Region %>%
   str_replace("Brussels Hoofdstedelijk Gewest", "Brussels agglomeration")
 
 
+data %>%
+  filter(TownNL=="Kapelle-op-den-Bos")%>%
+  filter(Sex=="F")%>%
+  filter(MaritalStatus=="Ongehuwd")%>%
+  filter(Age==34)
+
 #Creating a dataframe with total population for each town, and adding a column to see whether they have the same name
 popdata <- data %>% 
   group_by(TownNL, TownFR, Region, REFNIS) %>% 
@@ -91,6 +97,13 @@ popdata %>%
 
 ### REASON 1
 #First obvious reason is being a commune of the Brussels agglomeration, an official bilingual region
+
+popdata %>% 
+  filter(Region=="Brussels agglomeration") %>% 
+  summarise(NTowns=n(), N_SameName=n()-sum(DiffName), N_DiffName=sum(DiffName), 
+            Prop_SameName =1-round(mean(DiffName),2), Prop_DiffName=round(mean(DiffName),2))
+
+
 popdata %>% 
   filter(Region=="Brussels agglomeration") %>% 
   group_by(DiffName) %>%
