@@ -102,10 +102,11 @@ sum(popdata$DiffName)
 mean(popdata$DiffName)
 
 #by region
-popdata %>% 
+summary <- popdata %>% 
   group_by(Region) %>% 
   summarise(NTowns=n(), N_SameName=n()-sum(DiffName), N_DiffName=sum(DiffName), 
            Prop_SameName =1-round(mean(DiffName),2), Prop_DiffName=round(mean(DiffName),2))
+knitr::kable(summary)
 ```
 
 

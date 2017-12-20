@@ -117,6 +117,10 @@ reason_BXL <- popdata %>%
   mutate(Reason = "Brussels")
 
 
+
+
+
+
 popdata%>%
   filter(Region=="Flanders") %>% 
   filter(DiffName) %>% 
@@ -252,57 +256,73 @@ popdata_reason <- left_join(popdata, reason)
 #MAPPING
 ##########
 
+#creating a Region2 for plotting
+popdatamap <- popdata %>%
+  mutate(Region2 = ifelse(DiffName==TRUE, Region, NA))
+
+#check popdatamap
+popdatamap %>%
+  group_by(Region2) %>% 
+  summarise(n())
+
+
 #Importing SPdataframe for Belgium
 data("BE_ADMIN_MUNTY", package="BelgiumMaps.StatBel")
 glimpse(BE_ADMIN_MUNTY@data, max.level=2)
 
 #Merging my 2017 data with the SPdataframe
-mapdata <- merge(BE_ADMIN_MUNTY, popdata_reason, by.x = "CD_MUNTY_REFNIS", by.y = "REFNIS")
+mapdata <- merge(BE_ADMIN_MUNTY, popdatamap, by.x = "CD_MUNTY_REFNIS", by.y = "REFNIS")
 glimpse(mapdata@data, max.level=2)
 
 
-sf_belgium <- data("BE_ADMIN_MUNTY", package="BelgiumMaps.StatBel", class = "sf")
-
-#trial with only FALSE numbers
-
-popdata_DiffName <- popdata_reason %>% 
-  filter(DiffName==TRUE)
-  
-mapdataDiffName <- merge(BE_ADMIN_MUNTY, popdata_DiffName, by.x = "CD_MUNTY_REFNIS", by.y = "REFNIS")
-glimpse(mapdataDiffName@data, max.level=2)  
-
-
-
-
-
-#palette <- brewer.pal(3, "YlGnBu")
+#palette making
 virpalette <- rev(viridis(3))
 palette5 <- c(virpalette, "#E41A1C", "#FC8D62")
 #infpalette <- inferno(3)
 #magpalette <- magma(3)
+#palette <- brewer.pal(3, "YlGnBu")
 
 #Plot different regions
 regionplot<- tm_shape(mapdata) +
   tm_fill(col="Region", palette=virpalette,
           title = "Regions in Belgium")+
-  tm_polygons(id="TownNL")+
+  tm_polygons()+
   tm_layout(legend.position = c("left", "bottom"))
 
 
 #Plot to show those with differnet name by region
-nameplot <- tm_shape(mapdataDiffName) +
-  tm_fill(col="Region", palette=virpalette, id="TownNL", 
+nameplot <- tm_shape(mapdata) +
+  tm_fill(col="Region2", palette=virpalette, 
           colorNA = "gray90", textNA="Same name", 
-          title = "Different regional town names",legend.position = c("left", "bottom" ),
-          popup.vars = c("TownNL","TownFR", "population", "Reason"))+
-  tm_polygons(id="TownNL", "TownFR")+
+          title = "Different regional town names",legend.position = c("left", "bottom" ))+
+  tm_polygons()+
   tm_layout(legend.position = c("left", "bottom"))
-
 
 tmap_arrange(regionplot, nameplot)
 
 
-reasonplot <- tm_shape(mapdataDiffName) +
+###Reasonplot
+
+
+#creating a Region2 for plotting
+popdatamap_reason <- popdata_reason %>%
+  mutate(Region2 = ifelse(DiffName==TRUE, Region, NA))
+
+#check popdatamap
+popdatamap_reason %>%
+  group_by(Region2) %>% 
+  summarise(n())
+
+
+
+#Merging my 2017 data with the SPdataframe
+mapdata_reason <- merge(BE_ADMIN_MUNTY, popdatamap_reason, by.x = "CD_MUNTY_REFNIS", by.y = "REFNIS")
+
+
+
+
+#reasonplot
+tm_shape(mapdata_reason) +
   tm_fill(col="Reason", palette=palette5, id="TownNL", 
           colorNA = "gray90", textNA="Same name", 
           title = "Different regional town names",legend.position = c("left", "bottom" ))+
@@ -310,9 +330,23 @@ reasonplot <- tm_shape(mapdataDiffName) +
   tm_layout(legend.position = c("left", "bottom"))
 
 
+
+#Building interactive plot
+
+#Plot to show those with differnet name by region
+int_plot <- tm_shape(mapdata_reason) +
+  tm_fill(col="Region2", palette=virpalette, id="TownNL", 
+          colorNA = "gray90", textNA="Same name", 
+          title = "Different regional town names",legend.position = c("left", "bottom" ),
+          popup.vars = c("TownNL","TownFR", "population", "Reason"))+
+  tm_polygons(id="TownNL", "TownFR")+
+  tm_layout(legend.position = c("left", "bottom"))
+
+
+
 library(leaflet)
-interactive_plot <- tmap_leaflet(nameplot)
-interactive_plot
+int_plot_leaflet <- tmap_leaflet(int_plot)
+int_plot_leaflet
 
 
 
