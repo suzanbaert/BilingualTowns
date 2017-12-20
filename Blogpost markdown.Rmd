@@ -1,26 +1,27 @@
 ---
-title: "Playing with tmap: Antwerpen/Anvers, Bergen/Mons, Luik/Liège... how many towns do we have with two official names?"
+title: "Playing with `tmap`: How many towns with official bilingual names in Belgium?"
 output: html_document
 ---
 
 <br>
 
-## What I was wondering: how many towns do we have with two official names?
-I've heard many stories of confusion of tourists about our city names: They want to take the train to "Liège"" from Ghent but there only is one to "Luik". Or they are driving south towards France and their GPS might tell them to follow the direction "Mons", but as long as they are on Flemish territory they will see "Bergen". <br>
-Luik/Liège, Bergen/Mons... It is the same city. The first is the Flemish name, the second the French. <br>
-But what I didn't know is how many towns and cities we have that carry two official names. 
+It seems that we just love confusing foreigners...
+Imagine wanting to take a train to Mons from Ghent but there only is one driving to Bergen. Or driving south with a GPS telling you to folloz the direcion of Liège, but as long as you are on Flemish territory the direction signs will indicate Luik instead. 
+<br>
+Mons/Bergen, Liège/Luik, Ypres/Ieper... those names refer to exactly the same city - one of them is the official French name, the other one the official Dutch one. <br>
+Two week ago,  I heard again a story from foreigners who got very confused, so I wanted to find out how many towns/cities we have with two official town names, and where they are. 
 <br><br>
 
 
 
 ## Data source
-I found everything I needed on ([this website](http://statbel.fgov.be/nl/statistieken/opendata/datasets/bevolking/big/TF_SOC_POP_STRUCT_2017.jsp)) from the Belgian government.
+I found everything I needed on [this website](http://statbel.fgov.be/nl/statistieken/opendata/datasets/bevolking/big/TF_SOC_POP_STRUCT_2017.jsp) from the Belgian government. The data is from early 2017.
 <br><br>
 
 ## Cleaning the data
 
 Starting by loading the packages needed:
-```{r message=FALSE}
+```{r message=FALSE, warning=FALSE}
 #packages for the data exploration
 library(tidyverse)
 library(readxl)
@@ -31,16 +32,19 @@ library(sp)
 library(tmap)
 library(viridisLite)
 library(leaflet)
+library(BelgiumMaps.StatBel)
 ```
 
-<br>
-
-
-
+Importing the data
 ```{r message=FALSE}
 #Importing the data
 raw_data <- read_excel("TF_SOC_POP_STRUCT_2017_tcm325-283761.xlsx", sheet=1)
+```
 
+
+The data contains a lot of unneeded administrative data, and I wanted to rename some columns to English.
+
+```{r message=FALSE}
 #Keeping only the variables needed
 data <- raw_data %>% 
   select(contains("MUNTY"), TX_RGN_DESCR_NL, CD_SEX, TX_NATLTY_NL, TX_CIV_STS_NL, CD_AGE, MS_POPULATION)
@@ -54,36 +58,39 @@ data$Region <- data$Region %>%
 ```
 
 
-After importing the data, it contained a lot of administrative data I didn't need. 
-Additionnally, The data does not contain a total population by town, because it's divided in demographic subsets. A bit of dplyr filtering showed me that in my home town, there are less than 30 people with the same characteristics as me (female, unmarried, Belgian, age 34) but that's not really the most interesting.
-
-Using dplyr I created a population table, and immediately added a column to compare Town Names in Flemish and French. 
+Additionnally, the data does not have one population count but is divided in demographic subsets. A bit of  filtering showed me that in my home town, there are less than 30 people with the same characteristics as me (female, unmarried, Belgian, age 34) but that's not really what interests me. 
+So using dplyr, I created a population table, and immediately added a column to compare Town Names in Flemish and French. 
 
 ```{r message=FALSE}
 #Creating a dataframe with total population for each town, and adding a column to see whether they have the same name
-popdata <- data %>% 
+popdata1 <- data %>% 
   group_by(TownNL, TownFR, Region, REFNIS) %>% 
   summarise(population=sum(Population)) %>% 
   arrange(desc(population)) %>%
   mutate(SameName = TownNL==TownFR) %>% 
   ungroup()
-
-#Noticing an issue: 
-popdata%>%
-  filter(Region=="Flanders") %>% 
-  filter(!SameName) %>% 
-  print(n=11)
 ```
 
-But luckily I noticed an issue quickly. Some town names were annotated with their district. Beveren is called the same in Flemish or French, but its district gets translated. 
+
+There is an issue though. While browsing through some breakouts, I noticed that some town names are annotated with their district. Beveren for instance is called the same in Flemish or French, but its district got translated. 
+
+```{r message=FALSE}
+#Noticing an issue: 
+popdata1%>%
+  filter(Region=="Flanders") %>% 
+  filter(!SameName) %>% 
+  slice (11:13)
+```
+
 To get rid of the districts, I cleaned out any word pattern between brackets, and redid the comparison to find out where town names are different.
 
 ```{r message=FALSE}
 #Removing the sectors between brackets
+popdata <- popdata1
 popdata$TownNL <- str_replace(popdata$TownNL, pattern="\\s\\(.+\\)", replacement="")
 popdata$TownFR <- str_replace(popdata$TownFR, pattern="\\s\\(.+\\)", replacement="")
 
-#Reassessing whether the names are the same, and removing the previous sameName column to avoid confusion
+#Reassessing whether the names are the same
 popdata <- popdata %>% 
   mutate(DiffName = TownNL != TownFR) %>%
   select(TownNL, TownFR, DiffName, population, Region, REFNIS)
@@ -98,8 +105,12 @@ Contrary to what some people assume, it's more or less similar in both regions: 
 
 ```{r message=FALSE}
 #How many have exactly the same name?
-sum(popdata$DiffName)
-mean(popdata$DiffName)
+
+summary1 <- popdata %>% 
+  summarise(NTowns_DiffName = sum(popdata$DiffName), Prop_DiffName=mean(popdata$DiffName))
+knitr::kable(summary1, col.names= c("Number of towns with different name", 
+                                    "Proportion of towns with different name"))
+
 
 #by region
 summary <- popdata %>% 
@@ -239,8 +250,8 @@ After World War I, the peace treaty of Versailles listed the annexation of 9 Ger
 
 ```{r message=FALSE}
 #Listing the German communes and the two additional towns with german facilities
-germanspeaking <- c("Eupen", "Kelmis", "Lontzen", "Raeren", "Amel", "Büllingen", "Burg-Reuland", "Bütgenbach", 
-                    "Sankt Vith", "Malmedy", "Weismes")
+germanspeaking <- c("Eupen", "Kelmis", "Lontzen", "Raeren", "Amel", "Büllingen", 
+                    "Burg-Reuland", "Bütgenbach", "Sankt Vith", "Malmedy", "Weismes")
 
 #Proportion of Cities with different names
 popdata %>% 

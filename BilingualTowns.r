@@ -345,8 +345,4 @@ int_plot <- tm_shape(mapdata_reason) +
 
 
 library(leaflet)
-int_plot_leaflet <- tmap_leaflet(int_plot)
-int_plot_leaflet
-
-
-
+tmap_leaflet(int_plot)
