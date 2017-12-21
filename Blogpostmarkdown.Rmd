@@ -1,11 +1,12 @@
 ---
 title: "Playing with `tmap`: How many towns with official bilingual names in Belgium?"
-output: html_document
+output: md_document
+always_allow_html: yes
 ---
-
+  
   
 It seems that we Belgians just love confusing foreigners...  
-Imagine wanting to take a train to Mons from Ghent but there only is one driving to Bergen. Or driving south with a GPS telling you to folloz the direcion of Liège, but as long as you are on Flemish territory the direction signs will indicate Luik instead.  
+Imagine wanting to take a train to Mons from Ghent but there only is one driving to Bergen. Or driving south with a GPS telling you to follow the direcion of Liège, but as long as you are on Flemish territory the direction signs will indicate Luik instead.  
   
 Mons/Bergen, Liège/Luik, Ypres/Ieper... those names refer to exactly the same city - one of them is the official French name, the other one the official Dutch one.  
   
@@ -14,7 +15,7 @@ Two week ago, I heard again a story from foreigners who got very confused, and I
   
   
 ## Data source
-I found everything I needed on [this website](http://statbel.fgov.be/nl/statistieken/opendata/datasets/bevolking/big/TF_SOC_POP_STRUCT_2017.jsp) from the Belgian government. The data is from early 2017.
+I found everything I needed on [this website](http://statbel.fgov.be/nl/statistieken/opendata/datasets/bevolking/big/TF_SOC_POP_STRUCT_2017.jsp) from the Belgian government.
   
   
   
@@ -23,7 +24,8 @@ I found everything I needed on [this website](http://statbel.fgov.be/nl/statisti
 Starting by loading the packages needed:
 ```{r message=FALSE, warning=FALSE}
 #packages for the data exploration
-library(tidyverse)
+library(dplyr)
+library(stringr)
 library(readxl)
 library(ggplot2)
 
@@ -40,8 +42,8 @@ Importing the data:
 #Importing the data
 raw_data <- read_excel("TF_SOC_POP_STRUCT_2017_tcm325-283761.xlsx", sheet=1)
 ```
-
-
+  
+  
 The data contains a lot of unneeded administrative data, and I wanted to rename some columns to English.
 
 ```{r message=FALSE, warning=FALSE}
@@ -58,8 +60,8 @@ data$Region <- data$Region %>%
 ```
   
   
-Additionnally, the data does not have one population count but is divided in demographic subsets.  
-If I would want to know how many people live in my home town, which have the same gender, age, nationality and marital status, I could (26 by the way). 
+Additionally, the data does not have a total population count, but is divided in demographic subsets.  
+If I ever wanted to know how many people there are with exactly the same demographics as me (town, age, gender, marital status) I can now find out (26 by the way). 
 But since that's not really what I'm after, I used `dplyr` to create a summary population table, and immediately added a new boolean column to compare Town Names in Flemish and French. 
 
 ```{r}
@@ -73,7 +75,7 @@ popdata1 <- data %>%
 ```
   
   
-Quite quickly an issue presented itself though: while browsing through some breakouts, I noticed that some town names are annotated with their district. Beveren for instance is called the same in Flemish or French, but its district got translated, and it was flagged as town with a different name in Flemish or French. 
+Quite quickly an issue presented itself: while browsing through some breakouts, I noticed that some town names are annotated with their district. Beveren for instance is called the same in Flemish or French, but its district got translated, so it got flagged as a town with a different name in Flemish or French. 
 
 ```{r}
 #Noticing an issue: 
@@ -102,31 +104,26 @@ popdata <- popdata %>%
 
 ## A glimpse of the data exploration
   
-There are `r sum(popdata$DiffName)` towns/cities with two different official names, which is `r mean(popdata$DiffName)` of the total amount of towns.
-Contrary to what some people assume, it's more or less similar in both regions: 13% of Flemish towns have an official French name, 16% of Walloon towns have an official Flemish name on top. Only in Brussels, an official bilingual region, as a much higher percentage of 'double name's.
+There are `r sum(popdata$DiffName)` towns/cities with two different official names, which is 16% of the total amount of towns.
+Contrary to what some people assume, it's more or less similar in both regions: 13% of Flemish towns have an official French name, 16% of Walloon towns have an official Flemish name on top. Only Brussels, an official bilingual region, has a much higher percentage of 'double names'.
 
 ```{r message=FALSE, results='asis'}
 #How many have exactly the same name?
-
-popdata %>% 
-  summarise(NTowns_DiffName = sum(popdata$DiffName), Prop_DiffName=mean(popdata$DiffName))%>%
-  knitr::kable()
-
 #by region
 popdata %>% 
   group_by(Region) %>% 
   summarise(NTowns=n(), N_SameName=n()-sum(DiffName), N_DiffName=sum(DiffName), 
            Prop_SameName =1-round(mean(DiffName),2), Prop_DiffName=round(mean(DiffName),2))%>%
-  knitr::kable()
+  knitr::kable(align = "c")
 ```
   
   
   
 ## Mapping the towns with two official names
   
-Using tmap I created two first maps: one that shows the general regions in Belgium, and a second comparative one highlighting just the towns that have two official town names.
+Using `tmap` I created two first maps: the first one shows the general regions in Belgium, and a second one highlighting just the towns that have two official town names.
 
-```{r basic_map, message=FALSE, warning=FALSE, results="hide"}
+```{r basic_map, message=FALSE, warning=FALSE, results="hide", fig.show="hide"}
 #Importing SPdataframe for Belgium
 data("BE_ADMIN_MUNTY", package="BelgiumMaps.StatBel")
 
@@ -136,7 +133,6 @@ popdatamap <- popdata %>%
 
 #Merging my 2017 data with the SPdataframe
 mapdata <- merge(BE_ADMIN_MUNTY, popdatamap, by.x = "CD_MUNTY_REFNIS", by.y = "REFNIS")
-
 
 
 #palette generation
@@ -150,11 +146,11 @@ regionplot<- tm_shape(mapdata) +
   tm_layout(legend.position = c("left", "bottom"))
 
 
-#Plot to show those with differnet name by region
+#Plot to show those with different name by region
 nameplot <- tm_shape(mapdata) +
   tm_fill(col="Region2", palette=virpalette, 
           colorNA = "gray90", textNA="Same name", 
-          title = "Different regional town names",legend.position = c("left", "bottom" ))+
+          title = "Towns with two official names")+
   tm_polygons()+
   tm_layout(legend.position = c("left", "bottom"))
 
@@ -165,6 +161,7 @@ tmap_arrange(regionplot, nameplot)
   
   
 First of all, for people not familair with Belgium: you see our basic regions in the left plot
+
  * The yellow dot in the middle is the Brussels agglomeration, officially bilingual 
  * The north in green is Flanders where the official language is Dutch (of Flemish as we call it)
  * The south in purple is Wallonia where the official language is French
@@ -173,14 +170,14 @@ First of all, for people not familair with Belgium: you see our basic regions in
    
   
 The image on the right just shows all the towns with two official town names. Seeing a higher concentration of these towns around the language border is not a complete surprise, but it does not explain the majority of towns.   
-```{r ref.label='basic_map', echo=FALSE}
+```{r ref.label='basic_map', echo=FALSE, message=FALSE, warning=FALSE}
 
 ```
 
 ## Distilling the reason for two official town names  
   
 ### Reason 1: Brussels, an official Bilingual region  
-In the above table it was obvious that the Brussel's region has a much higher share of towns with two offical names: 68% versus the country average of 16%. Given Brussels status as bilingual that should not come as a surprise. I was actually more surprised to realize that there are still 6 that only have their original name only. Ganshoren for instance is a typical Flemish name that is not that easy to pronounce in French.
+In the above table it was obvious that the Brussel's region has a much higher share of towns with two offical names: 68% versus the country average of 16%. Given Brussels status as bilingual that should not come as a surprise. I was actually more surprised to realize that there are still 6 that only have their original name only. Ganshoren for instance is a typical Flemish name which is not that easy to pronounce in French.
 
 ```{r message=FALSE, results='asis'}
 
@@ -188,15 +185,16 @@ In the above table it was obvious that the Brussel's region has a much higher sh
 popdata %>% 
   filter(Region=="Brussels agglomeration") %>% 
   summarise(NTowns=n(), N_SameName=n()-sum(DiffName), N_DiffName=sum(DiffName), 
-            Prop_SameName =1-round(mean(DiffName),2), Prop_DiffName=round(mean(DiffName),2))%>%
-  knitr::kable()
+            Prop_SameName =1-round(mean(DiffName),2), Prop_DiffName=round(mean(DiffName),2)) %>%
+  knitr::kable(align="c")
 
 #List of names for Brussels
 popdata %>% 
   filter(Region=="Brussels agglomeration") %>% 
   group_by(DiffName) %>%
   arrange(desc(DiffName), desc(population)) %>%
-  knitr::kable()
+  select(-REFNIS)%>%
+  knitr::kable(align="c")
 
 #Adding a column to note down the reason for different names
 reason_BXL <- popdata %>% 
@@ -235,14 +233,14 @@ I took a shortcut to define our cities: the 10% highest populated towns.
   
 ```{r message=FALSE, results='asis'}
 #10% largest towns and cities in Belgium
-quantile(popdata$population, probs = seq(from = 0, to = 1, by = .1))
+quantile(popdata$population, probs = seq(from = 0.5, to = 1, by = .1))
 
 #Proportion of Cities with different names
 popdata %>% 
   filter(population > 34000) %>%
   summarise(NTowns=n(), N_SameName=n()-sum(DiffName), N_DiffName=sum(DiffName), 
             Prop_SameName =1-round(mean(DiffName),2), Prop_DiffName=round(mean(DiffName),2))%>%
-  knitr::kable()
+  knitr::kable(align="c")
 
 #Adding a reason column 
 reason_city <- popdata %>% 
@@ -270,14 +268,13 @@ popdata %>%
   filter(TownNL %in% germanspeaking) %>%
   summarise(NTowns=n(), N_SameName=n()-sum(DiffName), N_DiffName=sum(DiffName), 
             Prop_SameName =1-round(mean(DiffName),2), Prop_DiffName=round(mean(DiffName),2))%>%
-  knitr::kable()
+  knitr::kable(align="c")
 
 #German towns with two official names
 popdata %>% 
   filter(TownNL %in% germanspeaking) %>%
   filter(DiffName==TRUE) %>% 
-  print(n=nrow(.))%>%
-  knitr::kable()
+  knitr::kable(align="c")
 
 #Adding a reason column 
 reason_german <- popdata %>% 
@@ -305,14 +302,14 @@ popdata %>%
   filter(TownNL %in% faciliteiten) %>%
   summarise(NTowns=n(), N_SameName=n()-sum(DiffName), N_DiffName=sum(DiffName), 
             Prop_SameName =1-round(mean(DiffName),2), Prop_DiffName=round(mean(DiffName),2))%>%
-  knitr::kable()
+  knitr::kable(align="c")
 
 #Which towns have different names?
 popdata %>% 
   filter(TownNL %in% faciliteiten) %>%
   filter(DiffName==TRUE) %>% 
-  print(n=nrow(.))%>%
-  knitr::kable()
+  select(-REFNIS) %>%
+  knitr::kable(align="c")
 
 #Adding a reason column
 reason_facilities <- popdata %>% 
@@ -326,19 +323,20 @@ reason_facilities <- popdata %>%
    
 ### Reason 5: Other reasons
 
-The language border plays a big role obviously, so gathered any other towns along the border even if they have no language facilities. In many of these cases,throughout history towns have changed which region they belong to.  
+The language border is obviously another factor. Throughout history, many of these towns have changed region, so they inherited more than one name.
   
 Lastly, I wanted to make an "other reason" category, and bind all the reasons to my main data. 
   
 ```{r message=FALSE, results="hide"}
 
 #Language border
-
-language_border <- c("Heuvelland", "Komen-Waasten", "Mesen", "Menen", "Kortrijk", "Moeskroen", "Spiere-Helkijn",
-                     "Ronse", "Elzele", "Vloesberg", "Lessen", "Geraardsbergen", "Bever", "Opzullik",
-                     "Edingen", "Rebecq", "Tubeke", "Kasteelbrakel", "Halle", "Sint-Genesius-Rode", 
-                     "Eigenbrakel", "Terhulpen", "Waver", "Graven", "Bevekom", "Geldenaken", "Tienen", "Lijsem", 
-                     "Hannuit", "Borgworm", "Oerle", "Tongeren", "Bitsingen", "Voeren", "Wezet")
+language_border <- c("Heuvelland", "Komen-Waasten", "Mesen", "Menen", "Kortrijk", 
+                     "Moeskroen", "Spiere-Helkijn", "Ronse", "Elzele", "Vloesberg", 
+                     "Lessen", "Geraardsbergen", "Bever", "Opzullik", "Edingen", 
+                     "Rebecq", "Tubeke", "Kasteelbrakel", "Halle", "Tienen", 
+                     "Eigenbrakel", "Terhulpen", "Waver", "Graven", "Bevekom", 
+                     "Geldenaken", "Sint-Genesius-Rode", "Lijsem", "Hannuit", 
+                     "Borgworm", "Oerle", "Tongeren", "Bitsingen", "Voeren", "Wezet")
 
 
 reason_langborder <- popdata %>% 
@@ -360,7 +358,6 @@ reason_other <- popdata %>%
   mutate(Reason = "Other")
 
 
-
 #Merging reasons
 reason <- bind_rows(reason_BXL, reason_city, reason_german, reason_facilities, reason_langborder, reason_other)
 
@@ -377,9 +374,10 @@ popdata_reason <- popdata_reason %>%
 
 ```
   
+    
 A quick reason map:  
-The Brussels and German region are pretty obvious dots in the map, along with the language border and facility towns. Large cities are scattered across the whole of Belgium and many of the unidentied scattered dots also represent smaller cities (like Aarlen/Arlon or Temse/Tamise).  
-There is another group of towns close together that have two names even if
+The Brussels and German region are pretty obvious dots in the map, and equally obvious is our language border. Large cities are scattered across the whole of Belgium and many of the unidentied scattered dots also represent smaller cities (like Aarlen/Arlon or Temse/Tamise).  
+There is one other cluster of towns south west of Brussels starting from the langauge border but heading to the French border. That area used to be part of the medieval County of Flanders, where both Walloon and French towns often still carry a Flemish town name. Some of them got modernized but it seems many kept both names as well. 
 
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
 
@@ -400,12 +398,12 @@ tm_shape(mapdata_reason) +
   
   
   
-## Making a final map
+## Making a final interactive map
 
-I wanted to bring it all together in one final interactive map:
+I wanted to bring it all together in one final interactive map. Go ahead and click away...
 
 
-```{r message=FALSE, echo=FALSE}
+```{r message=FALSE, echo=FALSE, warning=FALSE}
 
 popdata_DiffName_r <- popdata_reason %>% 
   filter(DiffName==TRUE)
