@@ -1,5 +1,6 @@
 library(dplyr)
 library(readxl)
+library(stringr)
 library(ggplot2)
 library(sp)
 library(tmap)
@@ -357,7 +358,7 @@ reason_map <- tm_shape(mapdata_reason) +
   tm_polygons()+
   tm_layout(legend.position = c("left", "bottom"))
 
-tmap_leaflet(reason_map)
+#tmap_leaflet(reason_map)
 
 #Building interactive plot
 
@@ -375,6 +376,10 @@ int_plot <- tm_shape(mapdata_reason) +
 library(leaflet)
 tmap_leaflet(int_plot)
 
+widget <- tmap_leaflet(int_plot)
+
+library(htmlwidgets)
+saveWidget(widget, "interactivePlot.html")
 
 
 
