@@ -1,4 +1,4 @@
-library(tidyverse)
+library(dplyr)
 library(readxl)
 library(ggplot2)
 library(sp)
@@ -116,11 +116,6 @@ reason_BXL <- popdata %>%
   filter(DiffName) %>%
   mutate(Reason = "Brussels")
 
-
-
-
-
-
 popdata%>%
   filter(Region=="Flanders") %>% 
   filter(DiffName) %>% 
@@ -204,6 +199,7 @@ faciliteiten <- c("Bever", "Drogenbos", "Herstappe", "Kraainem", "Linkebeek", "M
                   "Sint-Genesius-Rode", "Spiere-Helkijn", "Voeren", "Wemmel", "Wezembeek-Oppem", 
                   "Edingen", "Komen-Waasten", "Moeskroen", "Vloesberg")
 
+
 popdata %>% 
   filter(TownNL %in% faciliteiten) %>%
   summarise(NTowns=n(), N_SameName=n()-sum(DiffName), N_DiffName=sum(DiffName), 
@@ -223,6 +219,24 @@ reason_facilities <- popdata %>%
 
 
 
+
+#Language border
+
+language_border <- c("Heuvelland", "Komen-Waasten", "Mesen", "Menen", "Kortrijk", "Moeskroen", "Spiere-Helkijn",
+                     "Ronse", "Elzele", "Vloesberg", "Lessen", "Geraardsbergen", "Bever", "Opzullik",
+                     "Edingen", "Rebecq", "Tubeke", "Kasteelbrakel", "Halle", "Sint-Genesius-Rode", 
+                     "Eigenbrakel", "Terhulpen", "Waver", "Graven", "Bevekom", "Geldenaken", "Tienen", "Lijsem", 
+                     "Hannuit", "Borgworm", "Oerle", "Tongeren", "Bitsingen", "Voeren", "Wezet")
+
+
+reason_langborder <- popdata %>% 
+  filter(TownNL %in% language_border) %>%
+  filter(DiffName) %>% 
+  anti_join(reason_city) %>% 
+  anti_join(reason_facilities) %>% 
+  mutate(Reason = "Language border")
+
+
 #Other
 reason_other <- popdata %>% 
   filter(DiffName) %>% 
@@ -230,11 +244,12 @@ reason_other <- popdata %>%
   anti_join(reason_BXL) %>% 
   anti_join(reason_german) %>% 
   anti_join(reason_facilities) %>% 
+  anti_join(reason_langborder) %>%
   mutate(Reason = "Other")
 
 
 #Merging reasons
-reason <- bind_rows(reason_BXL, reason_city, reason_german, reason_facilities, reason_other)
+reason <- bind_rows(reason_BXL, reason_city, reason_german, reason_facilities, reason_langborder, reason_other)
 
 #Searching for duplicates before join
 reason %>% 
@@ -249,7 +264,15 @@ popdata_reason <- left_join(popdata, reason)
 
 
 
+#Where are we
+popdata_reason %>%
+  filter(DiffName)%>%
+  group_by(Reason)%>%
+  count()
 
+popdata_reason %>%
+  filter(DiffName)%>%
+  filter(Reason=="Other")
 
 
 ##########
@@ -285,7 +308,8 @@ palette5 <- c(virpalette, "#E41A1C", "#FC8D62")
 #Plot different regions
 regionplot<- tm_shape(mapdata) +
   tm_fill(col="Region", palette=virpalette,
-          title = "Regions in Belgium")+
+          title = "Regions in Belgium",
+          popup.vars = c("TownNL","TownFR", "population"))+
   tm_polygons()+
   tm_layout(legend.position = c("left", "bottom"))
 
@@ -322,14 +346,18 @@ mapdata_reason <- merge(BE_ADMIN_MUNTY, popdatamap_reason, by.x = "CD_MUNTY_REFN
 
 
 #reasonplot
-tm_shape(mapdata_reason) +
-  tm_fill(col="Reason", palette=palette5, id="TownNL", 
+
+palette5 <- c(virpalette, "#E41A1C", "#FC8D62")
+palette6 <- c(virpalette, "#E41A1C", "#FC8D62", "#6C8790")
+reason_map <- tm_shape(mapdata_reason) +
+  tm_fill(col="Reason", palette=palette6, id="TownNL", 
           colorNA = "gray90", textNA="Same name", 
-          title = "Different regional town names",legend.position = c("left", "bottom" ))+
+          title = "Different regional town names",legend.position = c("left", "bottom" ),
+          popup.vars = c("TownNL","TownFR", "population", "Reason"))+
   tm_polygons()+
   tm_layout(legend.position = c("left", "bottom"))
 
-
+tmap_leaflet(reason_map)
 
 #Building interactive plot
 
@@ -337,12 +365,20 @@ tm_shape(mapdata_reason) +
 int_plot <- tm_shape(mapdata_reason) +
   tm_fill(col="Region2", palette=virpalette, id="TownNL", 
           colorNA = "gray90", textNA="Same name", 
-          title = "Different regional town names",legend.position = c("left", "bottom" ),
+          title = "Different regional town names",
           popup.vars = c("TownNL","TownFR", "population", "Reason"))+
-  tm_polygons(id="TownNL", "TownFR")+
+  tm_polygons()+
   tm_layout(legend.position = c("left", "bottom"))
 
 
 
 library(leaflet)
 tmap_leaflet(int_plot)
+
+
+
+
+
+
+#searching for towns with substring
+filter(popdata, grepl("mont", TownFR))
