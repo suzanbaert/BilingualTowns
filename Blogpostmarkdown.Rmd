@@ -6,11 +6,11 @@ always_allow_html: yes
   
   
 It seems that we Belgians just love confusing foreigners...  
-Imagine wanting to take a train to Mons from Ghent but there only is one driving to Bergen. Or driving south with a GPS telling you to follow the direcion of Liège, but as long as you are on Flemish territory the direction signs will indicate Luik instead.  
+Imagine wanting to take a train to Mons from Ghent but there only is one driving to Bergen. Or driving south with a GPS telling you to follow the direcion of Liège, but for a while you will only see signs to Luik. 
   
 Mons/Bergen, Liège/Luik, Ypres/Ieper... those names refer to exactly the same city - one of them is the official French name, the other one the official Dutch one.  
   
-Two week ago, I heard again a story from foreigners who got very confused, and I realized I have no idea how many towns/cities we have like this. Sounds like a perfect time to work on my `spatial object` skills!
+Two week ago, I heard again a story from foreigners who got very confused, and I realized I have no idea how many towns/cities we have like this. Sounds like a perfect time to play around with tmap and leaflet!
   
   
   

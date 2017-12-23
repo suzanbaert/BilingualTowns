@@ -5,10 +5,34 @@ library(ggplot2)
 library(sp)
 library(tmap)
 library(viridisLite)
+library(readr)
 
 
 #Data import from http://statbel.fgov.be/nl/statistieken/opendata/datasets/bevolking/big/TF_SOC_POP_STRUCT_2017.jsp
-raw_data <- read_excel("TF_SOC_POP_STRUCT_2017_tcm325-283761.xlsx", sheet=1)
+#raw_data <- read_excel("TF_SOC_POP_STRUCT_2017_tcm325-283761.xlsx", sheet=1)
+
+#CSV test did not work
+raw_data <- read_csv("2017-12 TF_SOC_POP_STRUCT_2017_tcm325-283761.csv")
+Encoding (raw_data$TX_MUNTY_DESCR_NL) <- "latinl"
+Encoding (raw_data$TX_MUNTY_DESCR_FR) <- "UTF-8"
+
+#check for strange characters
+filter(raw_data, grepl("bach", TX_MUNTY_DESCR_NL))
+filter(raw_data, grepl("Ambl", TX_MUNTY_DESCR_FR))
+
+
+
+# library(XLConnect)
+# path <- "https://github.com/suzanbaert/BlogFiles/blob/master/content/data/2017-12%20TF_SOC_POP_STRUCT_2017_tcm325-283761.csv?raw=true"
+# 
+# # Load workbook
+# wb <- loadWorkbook(path)
+# raw_data <- readWorksheet(wb, sheet = 1)
+# 
+# read.csv()
+
+
+#Some unwanted side effects by changing excel to csv las minute
 
 
 #Understanding data structure
