@@ -14,7 +14,7 @@ library(readr)
 #CSV test did not work
 raw_data <- read_csv("2017-12 TF_SOC_POP_STRUCT_2017_tcm325-283761.csv")
 Encoding (raw_data$TX_MUNTY_DESCR_NL) <- "latinl"
-Encoding (raw_data$TX_MUNTY_DESCR_FR) <- "UTF-8"
+Encoding (raw_data$TX_MUNTY_DESCR_FR) <- "latinl"
 
 #check for strange characters
 filter(raw_data, grepl("bach", TX_MUNTY_DESCR_NL))
